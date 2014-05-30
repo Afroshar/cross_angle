@@ -95,6 +95,20 @@ void pol_out(Polygon& pol)
 	debug<< "\n";
 }
 
+bool operator ==(Point& pt1, Point& pt2)
+{
+/*	//debug << "\t(==) check:\n";
+	//debug << "\t\t pt1: "; pt_out(pt1);
+	//debug << "\t\t pt2: "; pt_out(pt2);
+	//debug << "fabs(pt1.x - pt2.x)" << fabs(pt1.x - pt2.x) <<"\n";
+	//debug << "fabs(pt1.y - pt2.y)" << fabs(pt1.y - pt2.y) <<"\n";*/
+	 if ((fabs(pt1.x - pt2.x) < 0.00001) && (fabs(pt1.y - pt2.y) < 0.00001)) {
+//		 //debug << "true\n"; 
+		 return true; }
+	else {
+//		//debug << "false\n";
+		return false;}
+}
 //----------------------------------
 
 Line getLine(Point p1, Point p2)
@@ -151,13 +165,13 @@ double S(Polygon pol)
 
 int findCrossingPoint(Line l1, Line l2, Point& pt_cross)
 {
-	if ((l1.a * l2.b) == (l2.a * l1.b)) return 0; //если прямые параллельны или совпадают, return 0
+	if (fabs((l1.a * l2.b) - (l2.a * l1.b)) < 0.000000001) return 0; //если прямые параллельны или совпадают, return 0
 	pt_cross.x = ((l2.c * l1.b) - (l1.c * l2.b))/((l1.a * l2.b) - (l2.a * l1.b));
 	pt_cross.y = ((l1.c * l2.a) - (l2.c * l1.a))/((l1.a * l2.b) - (l2.a * l1.b)); 
-	if (l1.a = 0) pt_cross.y = -l1.c/l1.b;
-	if (l2.a = 0) pt_cross.y = -l2.c/l2.b;
-	if (l1.b = 0) pt_cross.x = -l1.c/l1.a;
-	if (l2.b = 0) pt_cross.x = -l2.c/l2.a;
+/*	if (l1.a == 0) pt_cross.y = -l1.c/l1.b;
+	if (l2.a == 0) pt_cross.y = -l2.c/l2.b;
+	if (l1.b == 0) pt_cross.x = -l1.c/l1.a;
+	if (l2.b == 0) pt_cross.x = -l2.c/l2.a;  */
 	return 1;
 }
 
@@ -168,12 +182,26 @@ int findCrossingPoint(Line l1, Point p1, Point p2, Point& pt_cross)
 	Line l2 = getLine(p1, p2);
 	if (findCrossingPoint(l1, l2, pt_cross))
 	{
+/*		//debug << "line1: "; l_out(l1);
+		//debug << "line2: "; l_out(l2);
+		//debug << "p1 "; pt_out(p1);
+		//debug << "p2 "; pt_out(p2);
+		//debug << "pt_cross: "; pt_out(pt_cross);*/
+		if ((pt_cross == p1) || (pt_cross == p2)) {
+			//debug << "good p1 or p2: "; pt_out(pt_cross);
+			return 1;
+		}
 		if ( 	(((pt_cross.x <= p1.x) && (pt_cross.x >= p2.x)) ||
 			 		((pt_cross.x >= p1.x) && (pt_cross.x <= p2.x))) && 
 			 	(((pt_cross.y <= p1.y) && (pt_cross.y >= p2.y)) ||
 				 	((pt_cross.y >= p1.y) && (pt_cross.y <= p2.y))) 	)
 			return 1;
-		else return 0;
+		else 
+		{
+/*			//debug << "bad fcp:\n";
+			//debug << "bad pt_cross: "; pt_out(pt_cross);*/
+			return 0;
+		}
 	}
 	else return 0;
 }
