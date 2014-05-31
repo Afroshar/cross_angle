@@ -155,7 +155,7 @@ double S(Polygon pol)
 
 int findCrossingPoint(Line l1, Line l2, Point& pt_cross)
 {
-	if (fabs((l1.a * l2.b) - (l2.a * l1.b)) < 0.000000001) return 0; //если прямые параллельны или совпадают, return 0
+	if (fabs((l1.a * l2.b) - (l2.a * l1.b)) < 0.0000001) return 0; //если прямые параллельны или совпадают, return 0
 	pt_cross.x = ((l2.c * l1.b) - (l1.c * l2.b))/((l1.a * l2.b) - (l2.a * l1.b));
 	pt_cross.y = ((l1.c * l2.a) - (l2.c * l1.a))/((l1.a * l2.b) - (l2.a * l1.b)); 
 	if (l1.a == 0) pt_cross.y = -l1.c/l1.b;
@@ -202,12 +202,19 @@ int findCrossingPoint(Line l1, Point p1, Point p2, Point& pt_cross)
 
 //------------------------------------
 
-Point getPolygonStartingPoint(Polygon pol, double angle)
+Point getPolygonStartingPoint(Polygon pol)
 {
 	//Возвращает стартовую точку для dividePolygonByline - max_x:min_y
 	//(если угол наклона прямой больше 90 градусов - min_x:min_y)
-	Point pt_start = pol.front();
-	if (angle <= 90)
+	Point pt_start = {0, 0};
+	for (int i = 0; i < pol.size(); i++)
+	{
+		pt_start.x += pol[i].x;
+		pt_start.y += pol[i].y;	
+	}
+	pt_start.x = pt_start.x / pol.size();
+	pt_start.y = pt_start.y / pol.size();
+/*	if (angle <= 90)
 	{
 		for (int i = 0; i < pol.size(); i++)
 		{
@@ -219,14 +226,14 @@ Point getPolygonStartingPoint(Polygon pol, double angle)
 	}
 	else 
 	{
-	for (int i = 0; i < pol.size(); i++)
+		for (int i = 0; i < pol.size(); i++)
 		{
 			if (pol[i].x < pt_start.x)
 				pt_start.x = pol[i].x;
 			if (pol[i].y < pt_start.y)
 				pt_start.y = pol[i].y;
 		}
-	}
+	}*/
 	return pt_start;
 }
 
@@ -333,17 +340,21 @@ int getPolygonSlice(Polygon pol, Line l1, Line l2, Polygon& slice)
 
 Line dividePolygonByLine(Polygon pol, double angle)
 {
-	Line l = getLine(angle, getPolygonStartingPoint(pol, angle)); //здесь l.c всегда такое, что l проходит ниже pol
+	Line l = getLine(angle, getPolygonStartingPoint(pol)); //здесь l.c всегда такое, что l проходит ниже pol
 	double c_start = l.c;
 	//debug "line_start: "; l_out(l);
-	double eps = S(pol)/1000; 
+	double eps = S(pol)/1000;
 	Polygon slice;
 	bool flag = false;
 	//двигаем l (l.c += step), 
 	//пока не получим fabs(S(slice) - s/2) <= eps
-	for (double s = S(pol), s_small = S(pol), delta_prev = S(pol), step = 0.1 ;
-								fabs(step) >= 0.0000001;
-											  l.c += step)
+	double s = S(pol);
+	double step;
+	if ((angle > 45) && (angle < 135)) step = l.a;
+	else step = 1;
+	for (double s_small = s, delta_prev = s	;
+			fabs(step) >= 0.0000001		;
+					  l.c += step		)
 	{
 		slice.clear();
 		//debug "=================\n";
@@ -364,36 +375,39 @@ Line dividePolygonByLine(Polygon pol, double angle)
 				if (fabs(s_small - (s/2)) > delta_prev)
 				{
 					//debug"d_prev: " << delta_prev << "  step: " << step << endl;	
-					step = -(step/2);
+					step = -step/2;
 				}
 				delta_prev = fabs(s_small - (s/2));
 			}
 		}
 		else
 		{
-			if (flag)
+			l.c = c_start;
+			step = step/2;
+		/*	if (flag)
 			{
 				//debug"bad step: "<< step <<"\t";
 				//debug"bad line: "; l_out(l);
 				//debug"bad slice: "; pol_out(slice);
 				return l;
-			}
+			}*/
 		}
 	}
 }
+
 
 //------------------------------------
 
 int dividePolygonByCross(Polygon pol, Point& pt_cross_main, double &angle)
 {
 	double s = S(pol);
-	double eps = s/100;  //т.к. в методе dividePolygonByLine достаточно высокая точность(eps = s/1000), здесь можно взять значение побольше
+	double eps = s/1000;  //т.к. в методе dividePolygonByLine достаточно высокая точность(eps = s/1000), здесь можно взять значение побольше
 	Polygon slice;
 	//поворачиваем крест (l1, l2) , пока не получим 
 	//S(slice) ~~ s/4   (fabs(s/4 - S(slice)) <= eps)
 	//Достаточно пройти 90 градусов
 	//Если решение не найдено, return 0
-	for (angle = 0; angle <= 89; angle += 0.1 )
+	for (angle = 0; angle <= 89.9; angle += 0.1 )
 	{
 		//debug "=====================" << endl;
 		//debug "angle: " << angle << "\n";
