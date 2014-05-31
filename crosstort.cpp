@@ -10,17 +10,6 @@
 	Если в во всем файле заменить "//debug <<" на "debug <<", то
 в файл "debug.txt" будут выводиться некоторые полезные(и не очень)
 данные о работе программы. 
-	Например, для теста { n = 4; polygon = [3:1, 3:3, 1:3, 1:2] } 
-очень много "плохих" итераций(bad_slice - "кусок торта" имеет
-меньше 3х точек, такого вообще быть не должно); S(pol) в некоторых
-местах вызывается с пустым pol. 
-Однако конечный результат похож на правду:
-S(slice): 0.720802 S(pol): 3
-slice_cross: 2.10302:2.17882  2.66319:3  1:3  1:2.93125  
-cross point: 2.10302 2.17882
-angle: 55.7
-
-Примерно то же самое происходит и с другими тестами.
 
 */
 #include <iostream>
@@ -95,20 +84,21 @@ void pol_out(Polygon& pol)
 	debug<< "\n";
 }
 
+//------------------------------------
+
 bool operator ==(Point& pt1, Point& pt2)
 {
-/*	//debug << "\t(==) check:\n";
-	//debug << "\t\t pt1: "; pt_out(pt1);
-	//debug << "\t\t pt2: "; pt_out(pt2);
-	//debug << "fabs(pt1.x - pt2.x)" << fabs(pt1.x - pt2.x) <<"\n";
-	//debug << "fabs(pt1.y - pt2.y)" << fabs(pt1.y - pt2.y) <<"\n";*/
-	 if ((fabs(pt1.x - pt2.x) < 0.00001) && (fabs(pt1.y - pt2.y) < 0.00001)) {
-//		 //debug << "true\n"; 
-		 return true; }
-	else {
-//		//debug << "false\n";
-		return false;}
+	 if ((fabs(pt1.x - pt2.x) < 0.00001) && (fabs(pt1.y - pt2.y) < 0.00001)) {return true; }
+	else {return false;}
 }
+//----------------------------------
+
+bool operator !=(Point& pt1, Point& pt2)
+{
+	if (!(pt1 == pt2)) return true;
+	else return false;
+}
+
 //----------------------------------
 
 Line getLine(Point p1, Point p2)
@@ -150,7 +140,7 @@ double S(Polygon pol)
 		 pol.push_back(pol.front());
 	else 
 	{
-		//debug << "empty polygon -> S=0\n";
+		//debug "empty polygon -> S=0\n";
 		return 0;
 	}
 	double s = 0;
@@ -168,10 +158,10 @@ int findCrossingPoint(Line l1, Line l2, Point& pt_cross)
 	if (fabs((l1.a * l2.b) - (l2.a * l1.b)) < 0.000000001) return 0; //если прямые параллельны или совпадают, return 0
 	pt_cross.x = ((l2.c * l1.b) - (l1.c * l2.b))/((l1.a * l2.b) - (l2.a * l1.b));
 	pt_cross.y = ((l1.c * l2.a) - (l2.c * l1.a))/((l1.a * l2.b) - (l2.a * l1.b)); 
-/*	if (l1.a == 0) pt_cross.y = -l1.c/l1.b;
+	if (l1.a == 0) pt_cross.y = -l1.c/l1.b;
 	if (l2.a == 0) pt_cross.y = -l2.c/l2.b;
 	if (l1.b == 0) pt_cross.x = -l1.c/l1.a;
-	if (l2.b == 0) pt_cross.x = -l2.c/l2.a;  */
+	if (l2.b == 0) pt_cross.x = -l2.c/l2.a;
 	return 1;
 }
 
@@ -182,24 +172,28 @@ int findCrossingPoint(Line l1, Point p1, Point p2, Point& pt_cross)
 	Line l2 = getLine(p1, p2);
 	if (findCrossingPoint(l1, l2, pt_cross))
 	{
-/*		//debug << "line1: "; l_out(l1);
-		//debug << "line2: "; l_out(l2);
-		//debug << "p1 "; pt_out(p1);
-		//debug << "p2 "; pt_out(p2);
-		//debug << "pt_cross: "; pt_out(pt_cross);*/
+		//debug "\t\tfindCrossingPoint(l, pt1, pt2, pt_cross):\n";
+		//debug "\t\tline1: "; l_out(l1);
+		//debug "\t\tline2: "; l_out(l2);
+		//debug "\t\tp1 "; pt_out(p1);
+		//debug "\t\tp2 "; pt_out(p2);
+		//debug "\t\tpt_cross_l1_l2: "; pt_out(pt_cross);
 		if ((pt_cross == p1) || (pt_cross == p2)) {
-			//debug << "good p1 or p2: "; pt_out(pt_cross);
+			//debug "\t\tpt_cross == p1 || p2 : "; pt_out(pt_cross);
 			return 1;
 		}
 		if ( 	(((pt_cross.x <= p1.x) && (pt_cross.x >= p2.x)) ||
 			 		((pt_cross.x >= p1.x) && (pt_cross.x <= p2.x))) && 
 			 	(((pt_cross.y <= p1.y) && (pt_cross.y >= p2.y)) ||
 				 	((pt_cross.y >= p1.y) && (pt_cross.y <= p2.y))) 	)
+		{
+			//debug "\t\tgood pt_cross: "; pt_out(pt_cross);
 			return 1;
+		}
 		else 
 		{
-/*			//debug << "bad fcp:\n";
-			//debug << "bad pt_cross: "; pt_out(pt_cross);*/
+			//debug "\t\tbad fcp:\n";
+			//debug "\t\tbad pt_cross: "; pt_out(pt_cross);
 			return 0;
 		}
 	}
@@ -251,25 +245,37 @@ int getPolygonSlice(Polygon pol, Line l, Polygon& slice)
 	{
 		if (!flag_begin_pol) //ищем 1ю точку
 		{
+			//debug "i: " << i <<";   pol[i]:  "; pt_out(pol[i]);
 			if (findCrossingPoint(l, pol[i], pol[i+1], pt_cross_lp))
-			{
+			{				
 				flag_begin_pol = true;
 				slice.push_back(pt_cross_lp);
+				//debug "started slice with: ";  pt_out(pt_cross_lp);
 			}
 		}
 		//как только нашли 1ю точку, заносим вершины pol
 		// в slice в порядке обхода, пока не найдем 2ю
 		else 
 		{
-			slice.push_back(pol[i]);				
+			//debug "\tentered else\n";
+			if (slice.back() != pol[i])
+			{
+				slice.push_back(pol[i]);
+				//debug "added: "; pt_out(pol[i]);
+			}
 			if (findCrossingPoint(l, pol[i], pol[i+1], pt_cross_lp))
 			{
-				flag_end_pol = true;
-				slice.push_back(pt_cross_lp);
-				return 1;
+				if (slice.back() != pt_cross_lp)
+				{
+					flag_end_pol = true;
+					slice.push_back(pt_cross_lp);
+					//debug "finished slice with: ";  pt_out(pt_cross_lp);
+					return 1;
+				}
 			}
 		}	
 	}
+	//debug"\tgetPolygonSlice(pol, l, &pol): bad slice\n";
 	return 0;
 }
 
@@ -329,7 +335,7 @@ Line dividePolygonByLine(Polygon pol, double angle)
 {
 	Line l = getLine(angle, getPolygonStartingPoint(pol, angle)); //здесь l.c всегда такое, что l проходит ниже pol
 	double c_start = l.c;
-	//debug << "line_start: "; l_out(l);
+	//debug "line_start: "; l_out(l);
 	double eps = S(pol)/1000; 
 	Polygon slice;
 	bool flag = false;
@@ -340,33 +346,36 @@ Line dividePolygonByLine(Polygon pol, double angle)
 											  l.c += step)
 	{
 		slice.clear();
+		//debug "=================\n";
 		if (getPolygonSlice(pol, l, slice))
 		{	
 			s_small = S(slice);
 			flag = true;
-			if ( fabs(s_small - s/2) <= eps )
+			if ( fabs(s_small - (s/2)) <= eps )
 			{
-				//debug << "good line: "; l_out(l); 
-				//debug << "good slice: "; pol_out(slice);
+				//debug "good line: "; l_out(l); 
+				//debug "good slice: "; pol_out(slice);
 				return l;
 			}
 			else
 			{
-				if (fabs(s_small - s/2) > delta_prev)
+				//debug "line: "; l_out(l);
+				//debug "slice: "; pol_out(slice);
+				if (fabs(s_small - (s/2)) > delta_prev)
 				{
+					//debug"d_prev: " << delta_prev << "  step: " << step << endl;	
 					step = -(step/2);
-					//debug <<"d_prev: " << delta_prev << "  step: " << step << endl;	
 				}
-				delta_prev = fabs(s_small - s/2);
+				delta_prev = fabs(s_small - (s/2));
 			}
 		}
 		else
 		{
 			if (flag)
 			{
-				//debug <<"bad step: "<< step <<"\t";
-				//debug <<"bad line: "; l_out(l);
-				//debug <<"bad slice: "; pol_out(slice);
+				//debug"bad step: "<< step <<"\t";
+				//debug"bad line: "; l_out(l);
+				//debug"bad slice: "; pol_out(slice);
 				return l;
 			}
 		}
@@ -386,27 +395,27 @@ int dividePolygonByCross(Polygon pol, Point& pt_cross_main, double &angle)
 	//Если решение не найдено, return 0
 	for (angle = 0; angle <= 89; angle += 0.1 )
 	{
-		//debug << "=====================" << endl;
-		//debug << "angle: " << angle << "\n";
-		//debug << "-------line1---------" << endl;
+		//debug "=====================" << endl;
+		//debug "angle: " << angle << "\n";
+		//debug "-------line1---------" << endl;
 		Line l1 = dividePolygonByLine(pol, angle);
-		//debug << "-------line2---------" << endl;
+		//debug "-------line2---------" << endl;
 		Line l2 = dividePolygonByLine(pol, angle + 90);
-		//debug << "---------------------" << endl;
+		//debug "---------------------" << endl;
 		if (findCrossingPoint(l1, l2, pt_cross_main))
 		{
 			if (getPolygonSlice(pol, l1, l2, slice))
 			{
 				if (fabs(s/4 - S(slice)) <= eps)
 				{
-					//debug << "S(slice): " << S(slice) << "  S(pol): "<< S(pol) << endl;
-					//debug << "slice_cross: "; pol_out(slice);
-					//debug << "#####################\n";	
+					//debug "S(slice): " << S(slice) << "  S(pol): "<< S(pol) << endl;
+					//debug "slice_cross: "; pol_out(slice);
+					//debug "#####################\n";	
 					return 1;
 				}
 			}	
-			//debug << "S(slice): " << S(slice) << "  S(pol): "<< S(pol) << endl;
-			//debug << "slice_cross: "; pol_out(slice);
+			//debug "S(slice): " << S(slice) << "  S(pol): "<< S(pol) << endl;
+			//debug "slice_cross: "; pol_out(slice);
 			slice.clear();
 		}
 	}
@@ -421,7 +430,7 @@ int main()
 	ifstream input("input.txt");
 	int n;
 	input >> n;
-	//debug << "n = " << n << endl;
+	//debug "n = " << n << endl;
 	Polygon pol;
 	pol.reserve(n+1);
 	Point buf;
@@ -432,21 +441,22 @@ int main()
 		pol.push_back(buf);
 	}
 	input.close();
-	//debug << "\n\n";
+	//debug "\n\n";
 	Point pt_cross_main = {0, 0};
 	double angle_main = 0;
-	//debug << "pol: "; pol_out(pol); //debug << "\n\n\n";
+	//debug "pol: "; pol_out(pol); //debug "\n\n\n";
+	/*Line l_test = dividePolygonByLine(pol, angle_main + 90);*/
 	ofstream output("output.txt", ios::out|ios::trunc);
 	if (dividePolygonByCross(pol, pt_cross_main, angle_main))
 	{	
 		output << pt_cross_main.x << " " <<  pt_cross_main.y 
 				<< endl << angle_main << endl; 
-		//debug << "Result:\n" << "cross point: "; pt_out(pt_cross_main);
-		//debug << "angle: " << angle_main << endl;
+		//debug "Result:\n" << "cross point: "; pt_out(pt_cross_main);
+		//debug "angle: " << angle_main << endl;
 	}
 	else 
 	{
-		//debug << "Result: -1\n";
+		//debug "Result: -1\n";
 		output << "-1\n";
 	}
 	output.close();
