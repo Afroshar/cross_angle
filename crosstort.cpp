@@ -5,8 +5,8 @@
 
 	Ниже вы найдете код решения(не совсем) задачи про разрезание
 многоугольника двумя перпендикулярными прямыми.
-	Код очень сырой, некоторые методы работают криво для 
-каких-то значений(я так и не выяснил, каких именно).
+
+
 	Если в во всем файле заменить "//debug <<" на "debug <<", то
 в файл "debug.txt" будут выводиться некоторые полезные(и не очень)
 данные о работе программы. 
@@ -158,6 +158,7 @@ int findCrossingPoint(Line l1, Line l2, Point& pt_cross)
 	if (fabs((l1.a * l2.b) - (l2.a * l1.b)) < 0.0000001) return 0; //если прямые параллельны или совпадают, return 0
 	pt_cross.x = ((l2.c * l1.b) - (l1.c * l2.b))/((l1.a * l2.b) - (l2.a * l1.b));
 	pt_cross.y = ((l1.c * l2.a) - (l2.c * l1.a))/((l1.a * l2.b) - (l2.a * l1.b)); 
+	
 	if (l1.a == 0) pt_cross.y = -l1.c/l1.b;
 	if (l2.a == 0) pt_cross.y = -l2.c/l2.b;
 	if (l1.b == 0) pt_cross.x = -l1.c/l1.a;
@@ -204,8 +205,8 @@ int findCrossingPoint(Line l1, Point p1, Point p2, Point& pt_cross)
 
 Point getPolygonStartingPoint(Polygon pol)
 {
-	//Возвращает стартовую точку для dividePolygonByline - max_x:min_y
-	//(если угол наклона прямой больше 90 градусов - min_x:min_y)
+	//Возвращает стартовую точку для dividePolygonByline - 
+	//среднее арифметическое всех точек многоугольника
 	Point pt_start = {0, 0};
 	for (int i = 0; i < pol.size(); i++)
 	{
@@ -340,7 +341,7 @@ int getPolygonSlice(Polygon pol, Line l1, Line l2, Polygon& slice)
 
 Line dividePolygonByLine(Polygon pol, double angle)
 {
-	Line l = getLine(angle, getPolygonStartingPoint(pol)); //здесь l.c всегда такое, что l проходит ниже pol
+	Line l = getLine(angle, getPolygonStartingPoint(pol)); 
 	double c_start = l.c;
 	//debug "line_start: "; l_out(l);
 	double eps = S(pol)/1000;
@@ -401,13 +402,13 @@ Line dividePolygonByLine(Polygon pol, double angle)
 int dividePolygonByCross(Polygon pol, Point& pt_cross_main, double &angle)
 {
 	double s = S(pol);
-	double eps = s/1000;  //т.к. в методе dividePolygonByLine достаточно высокая точность(eps = s/1000), здесь можно взять значение побольше
+	double eps = s/1000; 
 	Polygon slice;
 	//поворачиваем крест (l1, l2) , пока не получим 
-	//S(slice) ~~ s/4   (fabs(s/4 - S(slice)) <= eps)
-	//Достаточно пройти 90 градусов
+	//S(slice) ~~ s/4   (fabs(s/4 - S(slice)) <= eps).
+	//Достаточно пройти 90 градусов.
 	//Если решение не найдено, return 0
-	for (angle = 0; angle <= 89.9; angle += 0.1 )
+	for (angle = 0; angle <= 89.5; angle += 0.5 )
 	{
 		//debug "=====================" << endl;
 		//debug "angle: " << angle << "\n";
